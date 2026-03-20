@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task List</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      padding: 24px 16px;
+    }
+
+    header {
+      max-width: 680px;
+      margin: 0 auto 28px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    header h1 { font-size: 1.4rem; font-weight: 700; }
+    header .updated { font-size: 0.78rem; color: #888; }
+
+    .filters {
+      max-width: 680px;
+      margin: 0 auto 20px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #ddd;
+      background: #fff;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #444;
+    }
+    .filter-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+
+    .group {
+      max-width: 680px;
+      margin: 0 auto 24px;
+    }
+
+    .group-header {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+      margin-bottom: 8px;
+      padding-left: 4px;
+    }
+
+    .group-header .overdue-tag {
+      color: #e53e3e;
+      margin-left: 6px;
+    }
+
+    .task {
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      border: 1.5px solid #ebebeb;
+      transition: border-color 0.15s;
+    }
+    .task:hover { border-color: #ccc; }
+    .task.done { opacity: 0.45; }
+
+    .task-check {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 2px solid #ccc;
+      flex-shrink: 0;
+      margin-top: 1px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .task-check:hover { border-color: #888; }
+    .task-check.checked { background: #1a1a1a; border-color: #1a1a1a; }
+    .task-check.checked::after {
+      content: '';
+      display: block;
+      width: 6px; height: 4px;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      transform: rotate(-45deg) translateY(-1px);
+    }
+
+    .task-body { flex: 1; min-width: 0; }
+    .task-title { font-size: 0.92rem; font-weight: 500; margin-bottom: 5px; }
+
+    .task-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .tag {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    .tag-project { background: #eef2ff; color: #4362d4; }
+    .tag-assignee { background: #f0fdf4; color: #2d7d46; }
+    .tag-high { background: #fff0f0; color: #c53030; }
+    .tag-normal { background: #f7f7f7; color: #666; }
+    .tag-low { background: #fafafa; color: #999; }
+    .tag-done { background: #f0fdf4; color: #2d7d46; }
+
+    .empty { text-align: center; color: #aaa; font-size: 0.9rem; padding: 40px 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Tasks</h1>
+  <span class="updated" id="updated-at"></span>
+</header>
+
+<div class="filters">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="Tom">Tom</button>
+  <button class="filter-btn" data-filter="Hans">Hans</button>
+  <button class="filter-btn" data-filter="setting-up-byllie">Setting up Byllie</button>
+  <button class="filter-btn" data-filter="demo-for-hans">Demo for Hans</button>
+</div>
+
+<div id="task-list"></div>
+
+<script>
+const TASKS = [
+  {"id":"6175ba2d","project":"setting-up-byllie","assignee":"Tom","title":"Configure Byllie preferences and integrations","status":"todo","priority":"high","due_date":"2026-03-20"},
+  {"id":"7a05a471","project":"setting-up-byllie","assignee":"Tom","title":"Test Byllie features and workflows","status":"todo","priority":"normal","due_date":"2026-03-23"},
+  {"id":"58b777f7","project":"demo-for-hans","assignee":"Tom","title":"Prepare demo script and agenda","status":"todo","priority":"high","due_date":"2026-03-24"},
+  {"id":"67a8171f","project":"setting-up-byllie","assignee":"Hans","title":"Review Byllie capabilities","status":"todo","priority":"normal","due_date":"2026-03-24"},
+  {"id":"55f4cc5d","project":"demo-for-hans","assignee":"Tom","title":"Set up demo environment","status":"todo","priority":"normal","due_date":"2026-03-25"},
+  {"id":"928c92d7","project":"setting-up-byllie","assignee":"Hans","title":"Provide feedback on setup","status":"todo","priority":"low","due_date":"2026-03-25"},
+  {"id":"d5809fe0","project":"demo-for-hans","assignee":"Hans","title":"Attend demo session","status":"todo","priority":"high","due_date":"2026-03-26"},
+  {"id":"6082342e","project":"demo-for-hans","assignee":"Hans","title":"Share feedback after demo","status":"todo","priority":"normal","due_date":"2026-03-27"}
+];
+
+const TODAY = "2026-03-20";
+let activeFilter = "all";
+// Load done state from localStorage
+const doneIds = new Set(JSON.parse(localStorage.getItem("done") || "[]"));
+
+document.getElementById("updated-at").textContent = "Updated " + new Date().toLocaleDateString("en-GB", {day:"numeric",month:"short"});
+
+function formatDate(d) {
+  const [y, m, day] = d.split("-");
+  return new Date(y, m - 1, day).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+}
+
+function render() {
+  const tasks = TASKS.filter(t => {
+    if (activeFilter === "all") return true;
+    return t.assignee === activeFilter || t.project === activeFilter;
+  });
+
+  // Group by date
+  const groups = {};
+  tasks.forEach(t => {
+    if (!groups[t.due_date]) groups[t.due_date] = [];
+    groups[t.due_date].push(t);
+  });
+
+  const container = document.getElementById("task-list");
+  if (!tasks.length) {
+    container.innerHTML = '<div class="empty">No tasks</div>';
+    return;
+  }
+
+  container.innerHTML = Object.keys(groups).sort().map(date => {
+    const isOverdue = date < TODAY;
+    const isToday = date === TODAY;
+    let label = formatDate(date);
+    if (isToday) label = "Today · " + label;
+    const overdueTag = isOverdue ? '<span class="overdue-tag">overdue</span>' : "";
+
+    const items = groups[date].map(t => {
+      const done = doneIds.has(t.id);
+      const projectLabel = t.project.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      return `
+        <div class="task ${done ? "done" : ""}" data-id="${t.id}">
+          <div class="task-check ${done ? "checked" : ""}" onclick="toggleDone('${t.id}')"></div>
+          <div class="task-body">
+            <div class="task-title">${t.title}</div>
+            <div class="task-meta">
+              <span class="tag tag-project">${projectLabel}</span>
+              <span class="tag tag-assignee">${t.assignee}</span>
+              <span class="tag tag-${t.priority}">${t.priority}</span>
+              ${done ? '<span class="tag tag-done">done</span>' : ""}
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+
+    return `
+      <div class="group">
+        <div class="group-header">${label}${overdueTag}</div>
+        ${items}
+      </div>`;
+  }).join("");
+}
+
+function toggleDone(id) {
+  if (doneIds.has(id)) doneIds.delete(id);
+  else doneIds.add(id);
+  localStorage.setItem("done", JSON.stringify([...doneIds]));
+  render();
+}
+
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    activeFilter = btn.dataset.filter;
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    render();
+  });
+});
+
+render();
+</script>
+</body>
+</html>
